@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<style>
+			body {
+				font-family: -apple-system, "Segoe UI", sans-serif;
+				font-size: 13px;
+				color: #ccc;
+				background: #2d2d2d;
+				margin: 0;
+				padding: 24px;
+				display: flex;
+				justify-content: center;
+			}
+			.container {
+				width: 100%;
+				max-width: 420px;
+			}
+			.row {
+				display: flex;
+				align-items: center;
+				margin-bottom: 12px;
+			}
+			.row label {
+				width: 110px;
+				flex-shrink: 0;
+			}
+			.row input {
+				flex: 1;
+				background: #1e1e1e;
+				border: 1px solid #555;
+				color: #ccc;
+				padding: 6px 8px;
+				border-radius: 3px;
+				font-size: 13px;
+			}
+			.hint {
+				color: #888;
+				font-size: 12px;
+				margin-top: -6px;
+				margin-bottom: 14px;
+			}
+			.status {
+				color: #6cb6ff;
+				font-size: 12px;
+				height: 16px;
+			}
+			h1 {
+				font-size: 16px;
+				margin: 0 0 16px 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>CrashGuard Configuration</h1>
+
+			<div class="row">
+				<label for="engineBaseUrl">Engine URL</label>
+				<input id="engineBaseUrl" type="text" placeholder="http://localhost:5050" />
+			</div>
+			<div class="hint">URL of the crashguard-engine API.</div>
+
+			<div class="row">
+				<label for="appBaseUrl">App URL</label>
+				<input id="appBaseUrl" type="text" placeholder="http://localhost:5173" />
+			</div>
+			<div class="hint">URL of the crashguard-app web UI (where triggered canaries are reviewed).</div>
+
+			<div class="status" id="status"></div>
+		</div>
+
+		<script>
+			async function load() {
+				const res = await fetch("/api/global-settings");
+				const settings = await res.json();
+				document.getElementById("engineBaseUrl").value = settings.engineBaseUrl || "";
+				document.getElementById("appBaseUrl").value = settings.appBaseUrl || "";
+			}
+
+			let saveTimeout;
+			function save() {
+				const statusEl = document.getElementById("status");
+				clearTimeout(saveTimeout);
+				fetch("/api/global-settings", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						engineBaseUrl: document.getElementById("engineBaseUrl").value,
+						appBaseUrl: document.getElementById("appBaseUrl").value,
+					}),
+				})
+					.then(() => {
+						statusEl.textContent = "Saved.";
+						saveTimeout = setTimeout(() => (statusEl.textContent = ""), 2000);
+					})
+					.catch(() => {
+						statusEl.textContent = "Failed to save.";
+					});
+			}
+
+			document.getElementById("engineBaseUrl").addEventListener("change", save);
+			document.getElementById("appBaseUrl").addEventListener("change", save);
+
+			load();
+		</script>
+	</body>
+</html>

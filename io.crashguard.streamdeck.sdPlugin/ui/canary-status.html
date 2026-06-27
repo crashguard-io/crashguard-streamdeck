@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<style>
+			body {
+				font-family: -apple-system, "Segoe UI", sans-serif;
+				font-size: 12px;
+				color: #ccc;
+				background: #2d2d2d;
+				margin: 0;
+				padding: 8px 12px;
+			}
+			.row {
+				display: flex;
+				align-items: center;
+				margin-bottom: 8px;
+			}
+			.row label {
+				width: 110px;
+				flex-shrink: 0;
+			}
+			.row input,
+			.row select {
+				flex: 1;
+				background: #1e1e1e;
+				border: 1px solid #555;
+				color: #ccc;
+				padding: 4px 6px;
+				border-radius: 3px;
+			}
+			.hint {
+				color: #888;
+				font-size: 11px;
+				margin-top: -4px;
+				margin-bottom: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="row">
+			<label for="canaryType">Canary Type</label>
+			<select id="canaryType"><option value="">Loading…</option></select>
+		</div>
+		<div class="hint">Configure the Engine/App URLs from the plugin's link on the Preferences &rsaquo; Plugins page.</div>
+
+		<script>
+			let settings = {};
+			let globalSettings = {};
+
+			function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+				const actionInfo = JSON.parse(inActionInfo);
+				settings = actionInfo.payload.settings || {};
+
+				const ws = new WebSocket("ws://127.0.0.1:" + inPort);
+				window.__pi = { ws, uuid: inUUID, action: actionInfo.action };
+
+				ws.onopen = () => {
+					ws.send(JSON.stringify({ event: inRegisterEvent, uuid: inUUID }));
+					ws.send(JSON.stringify({ event: "getGlobalSettings", context: inUUID }));
+					applySettingsToForm();
+				};
+
+				ws.onmessage = (msg) => {
+					const data = JSON.parse(msg.data);
+					if (data.event === "didReceiveSettings") {
+						settings = data.payload.settings || {};
+						applySettingsToForm();
+					} else if (data.event === "didReceiveGlobalSettings") {
+						globalSettings = data.payload.settings || {};
+						loadCanaryTypes();
+					}
+				};
+			}
+
+			function applySettingsToForm() {
+				if (settings.canaryType) {
+					ensureOption(settings.canaryType);
+					document.getElementById("canaryType").value = settings.canaryType;
+				}
+			}
+
+			function ensureOption(value) {
+				const select = document.getElementById("canaryType");
+				if (![...select.options].some((o) => o.value === value)) {
+					const opt = document.createElement("option");
+					opt.value = value;
+					opt.textContent = value;
+					select.appendChild(opt);
+				}
+			}
+
+			async function loadCanaryTypes() {
+				const select = document.getElementById("canaryType");
+				const baseUrl = (globalSettings.engineBaseUrl || "http://localhost:5050").replace(/\/$/, "");
+				try {
+					const res = await fetch(baseUrl + "/api/canary-types");
+					const types = await res.json();
+					select.innerHTML = "";
+					const placeholder = document.createElement("option");
+					placeholder.value = "";
+					placeholder.textContent = "Select a canary type…";
+					select.appendChild(placeholder);
+					for (const t of types) {
+						const opt = document.createElement("option");
+						opt.value = t.name;
+						opt.textContent = t.name;
+						select.appendChild(opt);
+					}
+					if (settings.canaryType) {
+						ensureOption(settings.canaryType);
+						select.value = settings.canaryType;
+					}
+				} catch (err) {
+					select.innerHTML = '<option value="">Failed to load (check Engine URL in plugin settings)</option>';
+				}
+			}
+
+			function saveSettings() {
+				settings.canaryType = document.getElementById("canaryType").value;
+				window.__pi.ws.send(
+					JSON.stringify({
+						event: "setSettings",
+						action: window.__pi.action,
+						context: window.__pi.uuid,
+						payload: settings,
+					})
+				);
+			}
+
+			document.getElementById("canaryType").addEventListener("change", saveSettings);
+		</script>
+	</body>
+</html>

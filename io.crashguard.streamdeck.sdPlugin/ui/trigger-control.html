@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v3/sdpi-components.js"></script>
+	</head>
+	<body>
+		<sdpi-item label="Action">
+			<sdpi-select setting="actionType">
+				<option value="restart">Restart service</option>
+				<option value="ack">Acknowledge alert</option>
+				<option value="redeploy">Trigger redeploy</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Target">
+			<sdpi-textfield setting="targetName" placeholder="e.g. api-gateway"></sdpi-textfield>
+		</sdpi-item>
+	</body>
+</html>

@@ -1,0 +1,16 @@
+{
+	"id": "io.crashguard.streamdeck.canary-dial.layout",
+	"items": [
+		{
+			"key": "title",
+			"type": "text",
+			"rect": [0, 0, 200, 18],
+			"alignment": "center"
+		},
+		{
+			"key": "chart",
+			"type": "pixmap",
+			"rect": [0, 18, 200, 82]
+		}
+	]
+}

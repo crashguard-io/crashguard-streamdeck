@@ -1,0 +1,5 @@
+node_modules/
+io.crashguard.streamdeck.sdPlugin/bin/
+*.streamDeckPlugin
+logs/
+io.crashguard.streamdeck.sdPlugin/logs/

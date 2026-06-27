@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<style>
+			body {
+				font-family: -apple-system, "Segoe UI", sans-serif;
+				font-size: 12px;
+				color: #ccc;
+				background: #2d2d2d;
+				margin: 0;
+				padding: 8px 12px;
+			}
+			.row {
+				display: flex;
+				align-items: center;
+				margin-bottom: 8px;
+			}
+			.row label {
+				width: 110px;
+				flex-shrink: 0;
+			}
+			.row input,
+			.row select {
+				flex: 1;
+				background: #1e1e1e;
+				border: 1px solid #555;
+				color: #ccc;
+				padding: 4px 6px;
+				border-radius: 3px;
+			}
+			.interval {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				flex: 1;
+			}
+			.interval input {
+				width: 48px;
+				background: #1e1e1e;
+				border: 1px solid #555;
+				border-radius: 3px;
+				color: #ccc;
+				padding: 3px 4px;
+				text-align: center;
+			}
+			.interval span {
+				color: #888;
+			}
+			.hint {
+				color: #888;
+				font-size: 11px;
+				margin-top: -4px;
+				margin-bottom: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="row">
+			<label for="canaryType">Canary Type</label>
+			<select id="canaryType"><option value="">Loading…</option></select>
+		</div>
+		<div class="hint">Rotate the dial to cycle Triggered → Resolved → Pending → Avg Resolution charts. Press to refresh now.</div>
+
+		<div class="row">
+			<label>Interval</label>
+			<div class="interval">
+				<input type="number" id="hours" min="0" max="999" />
+				<span>h</span>
+				<input type="number" id="minutes" min="0" max="59" />
+				<span>m</span>
+				<input type="number" id="seconds" min="0" max="59" />
+				<span>s</span>
+			</div>
+		</div>
+		<div class="hint">Each chart shows this look-back window split into 12 buckets.</div>
+
+		<script>
+			let settings = {};
+			let globalSettings = {};
+
+			function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+				const actionInfo = JSON.parse(inActionInfo);
+				settings = actionInfo.payload.settings || {};
+
+				const ws = new WebSocket("ws://127.0.0.1:" + inPort);
+				window.__pi = { ws, uuid: inUUID, action: actionInfo.action };
+
+				ws.onopen = () => {
+					ws.send(JSON.stringify({ event: inRegisterEvent, uuid: inUUID }));
+					ws.send(JSON.stringify({ event: "getGlobalSettings", context: inUUID }));
+					applySettingsToForm();
+				};
+
+				ws.onmessage = (msg) => {
+					const data = JSON.parse(msg.data);
+					if (data.event === "didReceiveSettings") {
+						settings = data.payload.settings || {};
+						applySettingsToForm();
+					} else if (data.event === "didReceiveGlobalSettings") {
+						globalSettings = data.payload.settings || {};
+						loadCanaryTypes();
+					}
+				};
+
+				renderInterval();
+			}
+
+			function applySettingsToForm() {
+				if (settings.canaryType) {
+					ensureOption(settings.canaryType);
+					document.getElementById("canaryType").value = settings.canaryType;
+				}
+				renderInterval();
+			}
+
+			function ensureOption(value) {
+				const select = document.getElementById("canaryType");
+				if (![...select.options].some((o) => o.value === value)) {
+					const opt = document.createElement("option");
+					opt.value = value;
+					opt.textContent = value;
+					select.appendChild(opt);
+				}
+			}
+
+			async function loadCanaryTypes() {
+				const select = document.getElementById("canaryType");
+				const baseUrl = (globalSettings.engineBaseUrl || "http://localhost:5050").replace(/\/$/, "");
+				try {
+					const res = await fetch(baseUrl + "/api/canary-types");
+					const types = await res.json();
+					select.innerHTML = "";
+					const placeholder = document.createElement("option");
+					placeholder.value = "";
+					placeholder.textContent = "Select a canary type…";
+					select.appendChild(placeholder);
+					for (const t of types) {
+						const opt = document.createElement("option");
+						opt.value = t.name;
+						opt.textContent = t.name;
+						select.appendChild(opt);
+					}
+					if (settings.canaryType) {
+						ensureOption(settings.canaryType);
+						select.value = settings.canaryType;
+					}
+				} catch (err) {
+					select.innerHTML = '<option value="">Failed to load (check Engine URL in plugin settings)</option>';
+				}
+			}
+
+			function renderInterval() {
+				const totalSeconds = settings.intervalSeconds ?? 3600;
+				document.getElementById("hours").value = Math.floor(totalSeconds / 3600);
+				document.getElementById("minutes").value = Math.floor((totalSeconds % 3600) / 60);
+				document.getElementById("seconds").value = totalSeconds % 60;
+			}
+
+			function saveSettings() {
+				settings.canaryType = document.getElementById("canaryType").value;
+
+				const hours = Math.max(0, parseInt(document.getElementById("hours").value, 10) || 0);
+				const minutes = Math.max(0, parseInt(document.getElementById("minutes").value, 10) || 0);
+				const seconds = Math.max(0, parseInt(document.getElementById("seconds").value, 10) || 0);
+				settings.intervalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+				window.__pi.ws.send(
+					JSON.stringify({
+						event: "setSettings",
+						action: window.__pi.action,
+						context: window.__pi.uuid,
+						payload: settings,
+					})
+				);
+			}
+
+			document.getElementById("canaryType").addEventListener("change", saveSettings);
+			["hours", "minutes", "seconds"].forEach((id) => {
+				document.getElementById(id).addEventListener("change", saveSettings);
+			});
+		</script>
+	</body>
+</html>

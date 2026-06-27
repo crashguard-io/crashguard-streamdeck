@@ -1,0 +1,109 @@
+{
+	"Name": "CrashGuard",
+	"UUID": "io.crashguard.streamdeck",
+	"Version": "0.1.1.0",
+	"Author": "CrashGuard",
+	"Description": "Monitor and control CrashGuard services from your Stream Deck.",
+	"URL": "http://127.0.0.1:39871/",
+	"Icon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Nodejs": {
+		"Version": "20"
+	},
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion": "6.5"
+	},
+	"OS": [
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		},
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		}
+	],
+	"Category": "CrashGuard",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"Actions": [
+		{
+			"Name": "Canary Status",
+			"UUID": "io.crashguard.streamdeck.canary-status",
+			"Icon": "imgs/actions/canary-status/icon",
+			"Tooltip": "Red if a canary type has triggered since acknowledged, yellow if at risk, green if clear. Press to view recent triggers, long-press to acknowledge and clear red.",
+			"PropertyInspectorPath": "ui/canary-status.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/canary-status/key",
+					"TitleAlignment": "bottom"
+				}
+			]
+		},
+		{
+			"Name": "Canary Graph",
+			"UUID": "io.crashguard.streamdeck.canary-graph",
+			"Icon": "imgs/actions/canary-graph/icon",
+			"Tooltip": "Scrolling bar chart of resolved (green), at-risk (yellow), and triggered (red) canaries for one or more canary types.",
+			"PropertyInspectorPath": "ui/canary-graph.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/canary-graph/key",
+					"TitleAlignment": "top"
+				}
+			]
+		},
+		{
+			"Name": "Canary Metrics",
+			"UUID": "io.crashguard.streamdeck.canary-metrics",
+			"Icon": "imgs/actions/canary-metrics/icon",
+			"Tooltip": "Shows resolved (green), at-risk (yellow), and triggered (red) counts for one or more canary types over a configurable time window.",
+			"PropertyInspectorPath": "ui/canary-metrics.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/canary-metrics/key",
+					"TitleAlignment": "bottom"
+				}
+			]
+		},
+		{
+			"Name": "Trigger Control",
+			"UUID": "io.crashguard.streamdeck.trigger-control",
+			"Icon": "imgs/actions/trigger-control/icon",
+			"Tooltip": "Fires a CrashGuard action, such as restarting a service or acknowledging an alert.",
+			"PropertyInspectorPath": "ui/trigger-control.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/trigger-control/key",
+					"TitleAlignment": "bottom"
+				}
+			]
+		},
+		{
+			"Name": "Canary Dial",
+			"UUID": "io.crashguard.streamdeck.canary-dial",
+			"Icon": "imgs/actions/canary-dial/icon",
+			"Tooltip": "Rotate to cycle between triggered, resolved, pending, and average resolution time bar charts for a canary type over the last interval. Press to refresh.",
+			"PropertyInspectorPath": "ui/canary-dial.html",
+			"Controllers": ["Encoder"],
+			"Encoder": {
+				"layout": "layouts/canary-dial.json",
+				"TriggerDescription": {
+					"Rotate": "Cycle chart page",
+					"Push": "Refresh now",
+					"Touch": "Open filtered canary list"
+				}
+			},
+			"States": [
+				{
+					"Image": "imgs/actions/canary-dial/key",
+					"TitleAlignment": "top"
+				}
+			]
+		}
+	]
+}
